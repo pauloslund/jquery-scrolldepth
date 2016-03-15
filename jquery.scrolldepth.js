@@ -14,6 +14,7 @@
     percentage: true,
     userTiming: true,
     pixelDepth: true,
+    percentageInterval: 25,
     nonInteraction: true,
     gaGlobal: false,
     gtmOverride: false
@@ -23,6 +24,7 @@
     cache = [],
     scrollEventBound = false,
     lastPixelDepth = 0,
+    percentageSteps,
     universalGA,
     classicGA,
     gaGlobal,
@@ -42,6 +44,8 @@
     if ( $(document).height() < options.minHeight ) {
       return;
     }
+
+    percentageSteps = Math.floor(100 / options.percentageInterval);
 
     /*
      * Determine which version of GA is being used
@@ -128,13 +132,18 @@
     }
 
     function calculateMarks(docHeight) {
-      return {
-        '25%' : parseInt(docHeight * 0.25, 10),
-        '50%' : parseInt(docHeight * 0.50, 10),
-        '75%' : parseInt(docHeight * 0.75, 10),
-        // Cushion to trigger 100% event in iOS
-        '100%': docHeight - 5
-      };
+      var interval = options.percentageInterval,
+        marks = {};
+
+      for (var i = 1; i < percentageSteps; i++) {
+        var key = (interval * i) + '%';
+        var percent = (interval * i) / 100;
+        var value = parseInt(docHeight * percent, 10);
+        marks[key] = value;
+      }
+
+      marks['100%'] = docHeight - 5;
+      return marks;
     }
 
     function checkMarks(marks, scrollDistance, timing) {
@@ -279,7 +288,7 @@
           timing = +new Date - startTime;
 
         // If all marks already hit, unbind scroll event
-        if (cache.length >= options.elements.length + (options.percentage ? 4:0)) {
+        if (cache.length >= options.elements.length + (options.percentage ? percentageSteps:0)) {
           $window.off('scroll.scrollDepth');
           scrollEventBound = false;
           return;
